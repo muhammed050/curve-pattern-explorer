@@ -32,3 +32,19 @@ describe("geometric pattern detection", () => {
     expect(a.directionPeaks).toEqual(b.directionPeaks);
   });
 });
+
+  it("reports circle, clustering, and spatial diagnostics for a planted ring", () => {
+    const n = 80, x = new Float64Array(n), y = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      const a = 2 * Math.PI * i / n;
+      x[i] = 0.5 + 0.2 * Math.cos(a);
+      y[i] = 0.5 + 0.2 * Math.sin(a);
+    }
+    const result = detectGeometricPatterns(x, y, { seed: 77 });
+    expect(result.circle).not.toBeNull();
+    expect(result.circle!.radius).toBeCloseTo(0.2, 3);
+    expect(result.circle!.rmsResidual).toBeLessThan(1e-6);
+    expect(Number.isFinite(result.gridChiSquare)).toBe(true);
+    expect(Number.isFinite(result.ripleyK)).toBe(true);
+    expect(Number.isFinite(result.cubicCurveR2)).toBe(true);
+  });
