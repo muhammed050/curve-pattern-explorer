@@ -77,7 +77,7 @@ export function parse(src: string): Node {
     if (t.t === "id") {
       p++;
       if (isOp("(")) {
-        const f = FUNCS[t.s];
+        const f = Object.hasOwn(FUNCS, t.s) ? FUNCS[t.s] : undefined;
         if (!f) throw new Error(`Unknown function '${t.s}' at position ${t.pos + 1}`);
         p++;
         const args: Node[] = [];
@@ -86,7 +86,7 @@ export function parse(src: string): Node {
         if (args.length < f[1] || args.length > f[2]) throw new Error(`${t.s}() expects ${f[1] === f[2] ? f[1] : `${f[1]}–${f[2]}`} argument(s), got ${args.length}`);
         return { k: "call", f: t.s, args };
       }
-      if (t.s in CONSTS) return { k: "num", v: CONSTS[t.s] };
+      if (Object.hasOwn(CONSTS, t.s)) return { k: "num", v: CONSTS[t.s] };
       if ((VARS as readonly string[]).includes(t.s)) return { k: "var", n: t.s };
       throw new Error(`Unknown variable '${t.s}' at position ${t.pos + 1}`);
     }
