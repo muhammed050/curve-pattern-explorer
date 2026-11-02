@@ -58,14 +58,14 @@ export function batchToAffine(ps: Jac[]): Aff[] {
   const n = ps.length;
   const pre: bigint[] = new Array(n);
   let acc = 1n;
-  for (let i = 0; i < n; i++) { pre[i] = acc; acc = mod(acc * ps[i].Z); }
+  for (let i = 0; i < n; i++) { pre[i]! = acc; acc = mod(acc * ps[i]!.Z); }
   let invAcc = inv(acc);
   const out: Aff[] = new Array(n);
   for (let i = n - 1; i >= 0; i--) {
-    const zi = mod(invAcc * pre[i]);
-    invAcc = mod(invAcc * ps[i].Z);
+    const zi = mod(invAcc * pre[i]!);
+    invAcc = mod(invAcc * ps[i]!.Z);
     const z2 = mod(zi * zi);
-    out[i] = { x: mod(ps[i].X * z2), y: mod(ps[i].Y * z2 * zi) };
+    out[i]! = { x: mod(ps[i]!.X * z2), y: mod(ps[i]!.Y * z2 * zi) };
   }
   return out;
 }
@@ -94,7 +94,7 @@ function table(): Jac[] {
 export function mulG(k: bigint): Jac {
   const T = table();
   let r = INF, i = 0;
-  while (k > 0n) { if (k & 1n) r = jAdd(r, T[i]); k >>= 1n; i++; }
+  while (k > 0n) { if (k & 1n) r = jAdd(r, T[i]!); k >>= 1n; i++; }
   return r;
 }
 
@@ -153,21 +153,21 @@ export async function generateSample(n: number, onProgress?: (f: number) => void
   const chunk = 100;
   for (let i = 0; i < n; i += chunk) {
     const end = Math.min(n, i + chunk);
-    for (let j = i; j < end; j++) { scalars[j] = randomScalar(); jac[j] = mulG(scalars[j]); }
+    for (let j = i; j < end; j++) { scalars[j]! = randomScalar(); jac[j]! = mulG(scalars[j]!); }
     onProgress?.(end / n * 0.95);
     await new Promise((r) => setTimeout(r, 0));
   }
   const aff = batchToAffine(jac);
-  const order = scalars.map((_, i) => i).sort((a, b) => (scalars[a] < scalars[b] ? -1 : scalars[a] > scalars[b] ? 1 : 0));
+  const order = scalars.map((_, i) => i).sort((a, b) => (scalars[a]! < scalars[b]! ? -1 : scalars[a]! > scalars[b]! ? 1 : 0));
   const rank = new Float32Array(n);
-  order.forEach((idx, r) => { rank[idx] = n > 1 ? r / (n - 1) : 0; });
+  order.forEach((idx, r) => { rank[idx]! = n > 1 ? r / (n - 1) : 0; });
   scalars.fill(0n);
   const u = new Float64Array(n), v = new Float64Array(n);
   const xHex: string[] = new Array(n), yHex: string[] = new Array(n);
   for (let i = 0; i < n; i++) {
-    u[i] = toUnit(aff[i].x) - 0.5; v[i] = toUnit(aff[i].y) - 0.5;
-    xHex[i] = aff[i].x.toString(16).padStart(64, "0");
-    yHex[i] = aff[i].y.toString(16).padStart(64, "0");
+    u[i]! = toUnit(aff[i]!.x) - 0.5; v[i]! = toUnit(aff[i]!.y) - 0.5;
+    xHex[i]! = aff[i]!.x.toString(16).padStart(64, "0");
+    yHex[i]! = aff[i]!.y.toString(16).padStart(64, "0");
   }
   onProgress?.(1);
   return { n, u, v, rank, xHex, yHex, createdAt: Date.now() };

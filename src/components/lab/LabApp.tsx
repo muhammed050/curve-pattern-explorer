@@ -81,7 +81,7 @@ export function LabApp() {
   const updateStep = (i: number, patch: Partial<Step>) => setSteps((s) => s.map((st, j) => (j === i ? { ...st, ...patch } : st)));
   const moveStep = (i: number, d: number) => setSteps((s) => {
     const j = i + d; if (j < 0 || j >= s.length) return s;
-    const c = [...s]; [c[i], c[j]] = [c[j], c[i]]; return c;
+    const c = [...s]; [c[i], c[j]] = [c[j]!, c[i]!]; return c;
   });
 
   const exportCsv = () => {
@@ -270,7 +270,7 @@ function StepCard({ step, onChange, onMove, first, last, formulaError }: { step:
       {step.enabled && (
         <div className="mt-3 space-y-2">
           {def.params.map((p) => (
-            <Slider key={p.key} label={p.label} value={step.params[p.key]} min={p.min} max={p.max} step={p.step}
+            <Slider key={p.key} label={p.label} value={step.params[p.key] ?? p.def} min={p.min} max={p.max} step={p.step}
               onChange={(v) => onChange({ params: { ...step.params, [p.key]: v } })} />
           ))}
           {formulaError && <p className="text-xs text-destructive">{formulaError}</p>}
@@ -309,7 +309,7 @@ function FormulaPanel({ fx, fy, setFx, setFy, error, step, onChange }: { fx: str
       {error && <p className="text-xs text-destructive">Active formula: {error}</p>}
       <Toggle label="Custom step enabled" checked={step.enabled} onChange={(v) => onChange({ enabled: v })} />
       {STEP_DEFS.custom.params.map((p) => (
-        <Slider key={p.key} label={p.label} value={step.params[p.key]} min={p.min} max={p.max} step={p.step} onChange={(v) => onChange({ params: { ...step.params, [p.key]: v } })} />
+        <Slider key={p.key} label={p.label} value={step.params[p.key] ?? p.def} min={p.min} max={p.max} step={p.step} onChange={(v) => onChange({ params: { ...step.params, [p.key]: v } })} />
       ))}
       <div className="lab-label pt-2">Presets</div>
       <div className="flex flex-wrap gap-1">
