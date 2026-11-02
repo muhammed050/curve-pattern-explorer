@@ -139,6 +139,8 @@ export interface Sample {
   u: Float64Array; // X/P - 0.5
   v: Float64Array; // Y/P - 0.5
   rank: Float32Array; // rank of synthetic scalar within sample, normalized to [0,1]
+  /** Synthetic scalars, kept in memory only for the opt-in inspector. Never exported or sent anywhere. */
+  scalars: bigint[];
   xHex: string[];
   yHex: string[];
   createdAt: number;
@@ -161,7 +163,6 @@ export async function generateSample(n: number, onProgress?: (f: number) => void
   const order = scalars.map((_, i) => i).sort((a, b) => (scalars[a]! < scalars[b]! ? -1 : scalars[a]! > scalars[b]! ? 1 : 0));
   const rank = new Float32Array(n);
   order.forEach((idx, r) => { rank[idx]! = n > 1 ? r / (n - 1) : 0; });
-  scalars.fill(0n);
   const u = new Float64Array(n), v = new Float64Array(n);
   const xHex: string[] = new Array(n), yHex: string[] = new Array(n);
   for (let i = 0; i < n; i++) {
@@ -170,5 +171,5 @@ export async function generateSample(n: number, onProgress?: (f: number) => void
     yHex[i]! = aff[i]!.y.toString(16).padStart(64, "0");
   }
   onProgress?.(1);
-  return { n, u, v, rank, xHex, yHex, createdAt: Date.now() };
+  return { n, u, v, rank, scalars, xHex, yHex, createdAt: Date.now() };
 }
