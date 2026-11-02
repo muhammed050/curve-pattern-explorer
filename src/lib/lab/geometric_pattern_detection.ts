@@ -282,7 +282,7 @@ export function detectGeometricPatterns(
     if(dx*dx+dy*dy<=ripleyRadius*ripleyRadius)ripleyHits++;
   }
   const area=Math.max(width*height,Number.EPSILON);
-  const ripleyK=n>1&&sampledPairs>0 ? area*2*ripleyHits/(sampledPairs*n) : 0;
+  const ripleyK=n>1&&sampledPairs>0 ? area*((n-1)/n)*(ripleyHits/sampledPairs) : 0;
 
   // Cubic y(x) least-squares R². This detects only single-valued y=f(x) shapes.
   const cubicCurveR2 = (() => {
