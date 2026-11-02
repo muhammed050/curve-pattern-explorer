@@ -7,6 +7,7 @@ export interface Stats {
   clarkEvans: number; emptyCells: number; cellCV: number;
   localDiff: number; baselineDiff: number; lcs: number; lcsZ: number;
   centroidX: number; centroidY: number; stdX: number; stdY: number;
+  nnIdx: Int32Array;
   nnDist: Float64Array; // normalized-space NN distance per point (NaN if invalid)
 }
 
@@ -116,13 +117,13 @@ export function computeStats(x: Float64Array, y: Float64Array, rank: Float32Arra
     clarkEvans: nnMean / expectedNN, emptyCells: empty / counts.length, cellCV: cv,
     localDiff, baselineDiff, lcs: 1 - localDiff / baselineDiff, lcsZ,
     centroidX: cX, centroidY: cY, stdX: Math.sqrt(vx / m), stdY: Math.sqrt(vy / m),
-    nnDist: dist,
+    nnDist: dist, nnIdx: nn,
   };
 }
 
-export type StatsSummary = Omit<Stats, "nnDist">;
+export type StatsSummary = Omit<Stats, "nnDist" | "nnIdx">;
 export function summarize(s: Stats): StatsSummary {
-  const { nnDist: _drop, ...rest } = s;
-  void _drop;
+  const { nnDist: _drop, nnIdx: _drop2, ...rest } = s;
+  void _drop; void _drop2;
   return rest;
 }
