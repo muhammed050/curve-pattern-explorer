@@ -501,6 +501,38 @@ function GeometrySection({ result }: { result: ReturnType<typeof detectGeometric
         <Metric label="Residual tolerance" value={fmt(result.threshold, 7)} />
         <Metric label="Direction pairs sampled" value={result.sampledPairs.toLocaleString()} />
       </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <Metric label="PCA anisotropy (0–1)" value={fmt(result.anisotropy, 4)} />
+        <Metric label="Grid occupancy χ² (16×16)" value={fmt(result.gridChiSquare, 2)} />
+        <Metric label="Cubic curve fit R²" value={fmt(result.cubicCurveR2, 4)} />
+        <Metric label="Ripley K (sampled)" value={fmt(result.ripleyK, 6)} />
+        <Metric label="DBSCAN clusters" value={String(result.dbscanClusters.length)} />
+        <Metric label="DBSCAN noise points" value={result.dbscanNoise.toLocaleString()} />
+      </div>
+      <div className="rounded-xl border border-border bg-card p-4">
+        <div className="mb-2 font-medium">Additional algorithm results</div>
+        <div className="grid gap-2 text-xs sm:grid-cols-2">
+          <div className="rounded-md bg-muted/40 p-3">
+            <div className="text-muted-foreground">Algebraic least-squares circle</div>
+            {result.circle ? <div className="mt-1 font-mono">center ({fmt(result.circle.cx, 5)}, {fmt(result.circle.cy, 5)}) · r {fmt(result.circle.radius, 5)}<br/>RMS residual {fmt(result.circle.rmsResidual, 7)}</div> : <div className="mt-1 text-muted-foreground">No stable circle fit for this sample.</div>}
+          </div>
+          <div className="rounded-md bg-muted/40 p-3">
+            <div className="text-muted-foreground">Largest DBSCAN clusters</div>
+            <div className="mt-1 font-mono">{result.dbscanClusters.length ? result.dbscanClusters.join(" · ") : "No clusters passed minPts"}</div>
+            <div className="mt-1 text-muted-foreground">DBSCAN uses ε = 1.2% of the sample bounding-box diagonal and a bounded subsample of at most 1,800 points.</div>
+          </div>
+          <div className="rounded-md bg-muted/40 p-3">
+            <div className="text-muted-foreground">Ripley K diagnostic</div>
+            <div className="mt-1 font-mono">radius {fmt(result.ripleyRadius, 6)} · K {fmt(result.ripleyK, 7)}</div>
+            <div className="mt-1 text-muted-foreground">Pair-sampled; no edge correction. Compare against a matched null model.</div>
+          </div>
+          <div className="rounded-md bg-muted/40 p-3">
+            <div className="text-muted-foreground">Cubic polynomial fit</div>
+            <div className="mt-1 font-mono">R² = {fmt(result.cubicCurveR2, 5)}</div>
+            <div className="mt-1 text-muted-foreground">Only models y=f(x); vertical loops and general implicit curves are not captured.</div>
+          </div>
+        </div>
+      </div>
       <div className="rounded-xl border border-border bg-card p-4">
         <div className="mb-3 font-medium">Straight-line candidates</div>
         {result.lines.length ? (
