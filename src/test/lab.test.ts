@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { publicKey, TEST_VECTORS, runSelfTest, isOnCurve, randomScalar, N } from "./cryptography_engine";
-import { compileProjection, parse } from "./formula";
-import { computeStats } from "./statistical_analysis";
-import { defaultSteps, project } from "./projection_algorithms";
+import { publicKey, TEST_VECTORS, runSelfTest, isOnCurve, randomScalar, N } from "@/lib/lab/cryptography_engine";
+import { compileProjection, parse } from "@/lib/lab/formula";
+import { computeStats } from "@/lib/lab/statistical_analysis";
+import { defaultSteps, project } from "@/lib/lab/projection_algorithms";
 
 describe("secp256k1", () => {
   for (const t of TEST_VECTORS) it(`matches ${t.label}`, () => {
