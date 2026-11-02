@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { RotateCcw, Download } from "lucide-react";
 import { bin, bounds, colormap, gaussianBlur, rankArray, rgb, type VizMode } from "@/lib/lab/visualization_engine";
 
@@ -7,9 +7,13 @@ export interface Viz { pointSize: number; opacity: number; colorScale: boolean; 
 interface Props {
   x: Float64Array; y: Float64Array; rank: Float32Array; nnDist?: Float64Array | undefined;
   xHex: string[]; yHex: string[]; viz: Viz; title: string; className?: string;
+  /** maps a colour value t∈[0,1] to RGB */ palette?: (t: number) => [number, number, number];
+  levels?: number;
+  extraInfo?: (i: number) => ReactNode;
 }
 
-export function PointCanvas({ x, y, rank, nnDist, xHex, yHex, viz, title, className }: Props) {
+export function PointCanvas({ x, y, rank, nnDist, xHex, yHex, viz, title, className, palette, levels, extraInfo }: Props) {
+  const pal = palette ?? colormap;
   const wrap = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const [size, setSize] = useState({ w: 600, h: 400 });
@@ -66,7 +70,7 @@ export function PointCanvas({ x, y, rank, nnDist, xHex, yHex, viz, title, classN
 
     const mode = viz.mode;
     if (mode === "points" || mode === "neighborhood") {
-      const BK = 48;
+      const BK = Math.max(2, Math.round(levels ?? 48));
       const buckets: number[][] = Array.from({ length: BK }, () => []);
       for (let i = 0; i < x.length; i++) {
         if (!Number.isFinite(x[i]!) || !Number.isFinite(y[i]!)) continue;
@@ -77,7 +81,7 @@ export function PointCanvas({ x, y, rank, nnDist, xHex, yHex, viz, title, classN
       const r = viz.pointSize;
       buckets.forEach((list, bi) => {
         if (!list.length) return;
-        ctx.fillStyle = rgb(colormap((bi + 0.5) / BK), viz.opacity);
+        ctx.fillStyle = rgb(pal(BK > 1 ? bi / (BK - 1) : 0), viz.opacity);
         ctx.beginPath();
         for (const i of list) {
           const X = sx(x[i]!), Y = sy(y[i]!);
@@ -99,7 +103,7 @@ export function PointCanvas({ x, y, rank, nnDist, xHex, yHex, viz, title, classN
         const q = vals[gy * B + gx]!;
         if (!Number.isFinite(q) || (mode !== "colordist" && q <= 0)) continue;
         const t = mode === "colordist" ? q : mode === "density" ? Math.log1p(q) / Math.log1p(max) : q / max;
-        ctx.fillStyle = rgb(colormap(t), mode === "colordist" ? viz.opacity : Math.max(0.15, viz.opacity * (0.3 + 0.7 * t)));
+        ctx.fillStyle = rgb(pal(t), mode === "colordist" ? viz.opacity : Math.max(0.15, viz.opacity * (0.3 + 0.7 * t)));
         const X0 = sx(b.minX + gx * cw), Y0 = sy(b.minY + (gy + 1) * ch);
         const X1 = sx(b.minX + (gx + 1) * cw), Y1 = sy(b.minY + gy * ch);
         ctx.fillRect(X0, Y0, X1 - X0 + 0.5, Y1 - Y0 + 0.5);
@@ -179,13 +183,14 @@ export function PointCanvas({ x, y, rank, nnDist, xHex, yHex, viz, title, classN
         />
         {hover && viz.hover && (
           <div
-            className="pointer-events-none absolute z-10 max-w-[280px] rounded-md border border-border bg-popover/95 p-2 font-mono text-[10px] leading-relaxed text-popover-foreground shadow-lg backdrop-blur"
-            style={{ left: Math.min(hover.sx + 12, size.w - 290), top: Math.min(hover.sy + 12, size.h - 110) }}
+            className="pointer-events-none absolute z-10 max-w-[340px] rounded-md border border-border bg-popover/95 p-2 font-mono text-[10px] leading-relaxed text-popover-foreground shadow-lg backdrop-blur"
+            style={{ left: Math.max(4, Math.min(hover.sx + 12, size.w - 350)), top: Math.max(4, Math.min(hover.sy + 12, size.h - (extraInfo ? 260 : 110))) }}
           >
             <div className="text-primary">point #{hover.i}</div>
             <div className="break-all">X: {xHex[hover.i]!.slice(0, 20)}…{xHex[hover.i]!.slice(-8)}</div>
             <div className="break-all">Y: {yHex[hover.i]!.slice(0, 20)}…{yHex[hover.i]!.slice(-8)}</div>
             <div>proj: ({x[hover.i]!.toFixed(5)}, {y[hover.i]!.toFixed(5)})</div>
+            {extraInfo?.(hover.i)}
           </div>
         )}
       </div>
