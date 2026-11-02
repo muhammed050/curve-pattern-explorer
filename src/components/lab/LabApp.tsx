@@ -1,23 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Activity, BarChart3, Beaker, FlaskConical, FunctionSquare, GitCompare, LayoutDashboard,
+  Activity, BarChart3, Beaker, FlaskConical, FunctionSquare, GitCompare, LayoutDashboard, Waypoints,
   PanelRightClose, PanelRightOpen, Save, Settings, Sparkles, Trash2, Upload, ArrowUp, ArrowDown, FileDown, ShieldCheck,
 } from "lucide-react";
 import { generateSample, runSelfTest, type Sample, P, N } from "@/lib/lab/cryptography_engine";
 import { compileProjection } from "@/lib/lab/formula";
 import { defaultSteps, describePipeline, project, STEP_DEFS, type Step } from "@/lib/lab/projection_algorithms";
 import { computeStats, summarize, type StatsSummary } from "@/lib/lab/statistical_analysis";
+import { detectGeometricPatterns } from "@/lib/lab/geometric_pattern_detection";
 import { loadExperiments, saveExperiments, type Experiment } from "@/lib/lab/experiment_manager";
 import { MODES } from "@/lib/lab/visualization_engine";
 import { PointCanvas, type Viz } from "./PointCanvas";
 
-type Section = "overview" | "explorer" | "lab" | "formula" | "stats" | "compare" | "saved" | "settings";
+type Section = "overview" | "explorer" | "lab" | "formula" | "stats" | "geometry" | "compare" | "saved" | "settings";
 const NAV: { id: Section; label: string; icon: typeof Activity }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "explorer", label: "Point Explorer", icon: Sparkles },
   { id: "lab", label: "Algorithm Laboratory", icon: FlaskConical },
   { id: "formula", label: "Formula Editor", icon: FunctionSquare },
   { id: "stats", label: "Statistical Analysis", icon: BarChart3 },
+  { id: "geometry", label: "Geometric Patterns", icon: Waypoints },
   { id: "compare", label: "Experiment Comparison", icon: GitCompare },
   { id: "saved", label: "Saved Experiments", icon: Save },
   { id: "settings", label: "Settings", icon: Settings },
@@ -76,6 +78,8 @@ export function LabApp() {
   const projected = useMemo(() => (sample ? project(sample.u, sample.v, steps, custom.fn) : null), [sample, steps, custom]);
   const statsO = useMemo(() => (sample ? computeStats(sample.u, sample.v, sample.rank) : null), [sample]);
   const statsP = useMemo(() => (sample && projected ? computeStats(projected.x, projected.y, sample.rank) : null), [sample, projected]);
+  // Always analyze the ORIGINAL public X/Y projection, never transformed points or colour/rank labels.
+  const geometry = useMemo(() => (sample ? detectGeometricPatterns(sample.u, sample.v) : null), [sample]);
   const algo = describePipeline(steps);
 
   const updateStep = (i: number, patch: Partial<Step>) => setSteps((s) => s.map((st, j) => (j === i ? { ...st, ...patch } : st)));
@@ -187,6 +191,7 @@ export function LabApp() {
           )}
 
           {section === "overview" && <Overview sample={sample} selfTest={selfTest} go={setSection} statsO={statsO} />}
+          {section === "geometry" && geometry && <GeometrySection result={geometry} />}
           {section === "stats" && statsO && statsP && (
             <div className="w-full space-y-4">
               <LcsExplainer s={statsP} />
@@ -476,4 +481,64 @@ function SettingsPanel({ viz, setViz, size, setSize, selfTest, rerun }: { viz: V
       </div>
     </div>
   );
+}
+
+
+function GeometrySection({ result }: { result: ReturnType<typeof detectGeometricPatterns> }) {
+  const fmt = (v: number, digits = 5) => Number.isFinite(v) ? v.toFixed(digits) : "—";
+  return (
+    <div className="w-full space-y-4">
+      <div className="rounded-xl border border-border bg-card p-4">
+        <div className="mb-1 flex items-center gap-2 font-semibold"><Waypoints size={17} /> Geometric Pattern Detection</div>
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          Runs on original normalized public X/Y coordinates only. It does not use scalar ranks, colours, or transformed projections.
+          RANSAC reports candidate alignments; candidates are not proof of non-random structure.
+        </p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Metric label="Valid public points" value={result.validCount.toLocaleString()} />
+        <Metric label="Candidate lines" value={String(result.lines.length)} />
+        <Metric label="Residual tolerance" value={fmt(result.threshold, 7)} />
+        <Metric label="Direction pairs sampled" value={result.sampledPairs.toLocaleString()} />
+      </div>
+      <div className="rounded-xl border border-border bg-card p-4">
+        <div className="mb-3 font-medium">Straight-line candidates</div>
+        {result.lines.length ? (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[620px] text-left text-xs">
+              <thead className="text-muted-foreground"><tr>
+                <th className="p-2">#</th><th className="p-2">Points</th><th className="p-2">Sample %</th>
+                <th className="p-2">Angle</th><th className="p-2">RMS residual</th><th className="p-2">Max residual</th>
+              </tr></thead>
+              <tbody>{result.lines.map((line, i) => <tr key={i} className="border-t border-border">
+                <td className="p-2">{i + 1}</td><td className="p-2 font-mono">{line.count}</td>
+                <td className="p-2 font-mono">{(line.fraction * 100).toFixed(3)}%</td>
+                <td className="p-2 font-mono">{fmt(line.angleDeg, 3)}°</td>
+                <td className="p-2 font-mono">{fmt(line.rmsResidual, 7)}</td>
+                <td className="p-2 font-mono">{fmt(line.maxResidual, 7)}</td>
+              </tr>)}</tbody>
+            </table>
+          </div>
+        ) : <p className="text-sm text-muted-foreground">No line candidate passed the current minimum-inlier and residual thresholds.</p>}
+      </div>
+      <div className="rounded-xl border border-border bg-card p-4">
+        <div className="mb-1 font-medium">Most common pair directions</div>
+        <p className="mb-3 text-xs text-muted-foreground">Angles are unoriented (0°–180°). Histogram peaks can arise from the point-cloud shape itself.</p>
+        <div className="space-y-2">{result.directionPeaks.map((peak, i) => <div key={i} className="grid grid-cols-[58px_1fr_100px] items-center gap-3 text-xs">
+          <span className="font-mono">{fmt(peak.angleDeg, 1)}°</span>
+          <div className="h-2 overflow-hidden rounded bg-muted"><div className="h-full rounded bg-primary" style={{ width: `${Math.max(0, peak.fraction * 100)}%` }} /></div>
+          <span className="text-right font-mono text-muted-foreground">{peak.count} ({(peak.fraction * 100).toFixed(2)}%)</span>
+        </div>)}</div>
+      </div>
+      <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-xs leading-relaxed text-muted-foreground">
+        <strong className="text-foreground">Scientific caution:</strong> this first detector searches straight lines and pair-direction concentration.
+        It does not yet test curved paths or statistical significance. A valid discovery requires comparison against a null model
+        that samples points from the secp256k1 curve, correction for searching many candidate lines, and replication on independent samples.
+      </div>
+    </div>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return <div className="rounded-xl border border-border bg-card p-4"><div className="text-xs text-muted-foreground">{label}</div><div className="mt-1 font-mono text-2xl">{value}</div></div>;
 }
