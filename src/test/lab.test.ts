@@ -33,13 +33,13 @@ describe("formula parser", () => {
 describe("stats", () => {
   it("random colours give LCS near 0; correlated give high LCS", () => {
     const n = 2000, u = new Float64Array(n), v = new Float64Array(n), rr = new Float32Array(n), rc = new Float32Array(n);
-    for (let i = 0; i < n; i++) { u[i] = Math.random(); v[i] = Math.random(); rr[i] = Math.random(); rc[i] = u[i]; }
+    for (let i = 0; i < n; i++) { u[i] = Math.random(); v[i] = Math.random(); rr[i] = Math.random(); rc[i] = u[i]!; }
     expect(Math.abs(computeStats(u, v, rr).lcs)).toBeLessThan(0.1);
     expect(computeStats(u, v, rc).lcs).toBeGreaterThan(0.8);
   });
   it("rotation preserves NN distances", () => {
     const n = 500, u = new Float64Array(n).map(() => Math.random() - 0.5), v = new Float64Array(n).map(() => Math.random() - 0.5);
-    const steps = defaultSteps(); steps[1].enabled = true; steps[1].params.deg = 0;
+    const steps = defaultSteps(); const rot = steps[1]!; rot.enabled = true; rot.params["deg"] = 0;
     const p = project(u, v, steps, null);
     expect(Array.from(p.x)).toEqual(Array.from(u));
   });

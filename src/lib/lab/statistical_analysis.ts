@@ -25,7 +25,7 @@ export function nearestNeighbors(px: Float64Array, py: Float64Array, idx: number
   const G = Math.max(1, Math.floor(Math.sqrt(m / 2)));
   const cells: number[][] = Array.from({ length: G * G }, () => []);
   const cell = (t: number) => Math.min(G - 1, Math.max(0, Math.floor(t * G)));
-  for (const i of idx) cells[cell(py[i]!) * G + cell(px[i]!)].push(i);
+  for (const i of idx) cells[cell(py[i]!) * G + cell(px[i]!)]!.push(i);
   const nn = new Int32Array(px.length).fill(-1), dist = new Float64Array(px.length).fill(NaN);
   for (const i of idx) {
     const cx = cell(px[i]!), cy = cell(py[i]!);
@@ -77,7 +77,7 @@ export function computeStats(x: Float64Array, y: Float64Array, rank: Float32Arra
     if (nn[i]! < 0) continue;
     const d = dist[i]!;
     nnSum += d; nnSq += d * d; if (d < nnMin) nnMin = d; if (d > nnMax) nnMax = d;
-    const diff = Math.abs(rank[i]! - rank[nn[i]!]);
+    const diff = Math.abs(rank[i]! - rank[nn[i]!]!);
     ld += diff; ldSq += diff * diff; cnt++;
   }
   const nnMean = cnt ? nnSum / cnt : NaN;

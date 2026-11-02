@@ -5,7 +5,7 @@ import { bin, bounds, colormap, gaussianBlur, rankArray, rgb, type VizMode } fro
 export interface Viz { pointSize: number; opacity: number; colorScale: boolean; grid: boolean; mode: VizMode; hover: boolean }
 
 interface Props {
-  x: Float64Array; y: Float64Array; rank: Float32Array; nnDist?: Float64Array;
+  x: Float64Array; y: Float64Array; rank: Float32Array; nnDist?: Float64Array | undefined;
   xHex: string[]; yHex: string[]; viz: Viz; title: string; className?: string;
 }
 
@@ -23,7 +23,7 @@ export function PointCanvas({ x, y, rank, nnDist, xHex, yHex, viz, title, classN
 
   useEffect(() => {
     const el = wrap.current; if (!el) return;
-    const ro = new ResizeObserver(([e]) => setSize({ w: Math.max(100, e.contentRect.width), h: Math.max(100, e.contentRect.height) }));
+    const ro = new ResizeObserver(([e]) => e && setSize({ w: Math.max(100, e.contentRect.width), h: Math.max(100, e.contentRect.height) }));
     ro.observe(el);
     return () => ro.disconnect();
   }, []);

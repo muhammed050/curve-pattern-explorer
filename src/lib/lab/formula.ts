@@ -31,10 +31,10 @@ function tokenize(src: string): Tok[] {
     re.lastIndex = i;
     const m = re.exec(src);
     if (!m) throw new Error(`Unexpected character '${src.slice(i).trim()[0]}' at position ${i + 1}`);
-    const pos = m.index + m[0].length - (m[1] ?? m[2] ?? m[3]).length;
+    const pos = m.index + m[0].length - (m[1] ?? m[2] ?? m[3] ?? "").length;
     if (m[1]) out.push({ t: "num", s: m[1], pos });
     else if (m[2]) out.push({ t: "id", s: m[2], pos });
-    else out.push({ t: "op", s: m[3] === "**" ? "^" : m[3], pos });
+    else out.push({ t: "op", s: m[3] === "**" ? "^" : (m[3] ?? ""), pos });
     i = re.lastIndex;
   }
   return out;
@@ -44,20 +44,21 @@ export function parse(src: string): Node {
   const toks = tokenize(src);
   if (!toks.length) throw new Error("Expression is empty");
   let p = 0;
-  const peek = () => toks[p];
-  const isOp = (s: string) => peek()?.t === "op" && peek().s === s;
+  const peek = (): Tok | undefined => toks[p];
+  const cur = (): Tok => toks[p]!;
+  const isOp = (s: string) => peek()?.t === "op" && cur().s === s;
   const expect = (s: string) => {
-    if (!isOp(s)) throw new Error(`Expected '${s}'${peek() ? ` at position ${peek().pos + 1}` : " at end"}`);
+    if (!isOp(s)) throw new Error(`Expected '${s}'${peek() ? ` at position ${cur().pos + 1}` : " at end"}`);
     p++;
   };
   const expr = (): Node => {
     let a = term();
-    while (isOp("+") || isOp("-")) { const op = toks[p++].s; a = { k: "bin", op, a, b: term() }; }
+    while (isOp("+") || isOp("-")) { const op = toks[p++]!.s; a = { k: "bin", op, a, b: term() }; }
     return a;
   };
   const term = (): Node => {
     let a = unary();
-    while (isOp("*") || isOp("/") || isOp("%")) { const op = toks[p++].s; a = { k: "bin", op, a, b: unary() }; }
+    while (isOp("*") || isOp("/") || isOp("%")) { const op = toks[p++]!.s; a = { k: "bin", op, a, b: unary() }; }
     return a;
   };
   const unary = (): Node => {
@@ -86,7 +87,7 @@ export function parse(src: string): Node {
         if (args.length < f[1] || args.length > f[2]) throw new Error(`${t.s}() expects ${f[1] === f[2] ? f[1] : `${f[1]}–${f[2]}`} argument(s), got ${args.length}`);
         return { k: "call", f: t.s, args };
       }
-      if (Object.hasOwn(CONSTS, t.s)) return { k: "num", v: CONSTS[t.s] };
+      if (Object.hasOwn(CONSTS, t.s)) return { k: "num", v: CONSTS[t.s]! };
       if ((VARS as readonly string[]).includes(t.s)) return { k: "var", n: t.s };
       throw new Error(`Unknown variable '${t.s}' at position ${t.pos + 1}`);
     }
@@ -94,7 +95,7 @@ export function parse(src: string): Node {
     throw new Error(`Unexpected '${t.s}' at position ${t.pos + 1}`);
   };
   const root = expr();
-  if (p < toks.length) throw new Error(`Unexpected '${toks[p].s}' at position ${toks[p].pos + 1}`);
+  if (p < toks.length) throw new Error(`Unexpected '${cur().s}' at position ${cur().pos + 1}`);
   return root;
 }
 
@@ -104,9 +105,9 @@ function compileNode(n: Node): (e: Env) => number {
     case "var": { const k = n.n as keyof Env; return (e) => e[k]; }
     case "un": { const a = compileNode(n.a); return (e) => -a(e); }
     case "call": {
-      const f = FUNCS[n.f][0], args = n.args.map(compileNode);
-      if (args.length === 1) { const a0 = args[0]; return (e) => f(a0(e)); }
-      if (args.length === 2) { const [a0, a1] = args; return (e) => f(a0(e), a1(e)); }
+      const f = FUNCS[n.f]![0], args = n.args.map(compileNode);
+      if (args.length === 1) { const a0 = args[0]!; return (e) => f(a0(e)); }
+      if (args.length === 2) { const a0 = args[0]!, a1 = args[1]!; return (e) => f(a0(e), a1(e)); }
       return (e) => f(...args.map((g) => g(e)));
     }
     case "bin": {
