@@ -69,10 +69,10 @@ export function PointCanvas({ x, y, rank, nnDist, xHex, yHex, viz, title, classN
       const BK = 48;
       const buckets: number[][] = Array.from({ length: BK }, () => []);
       for (let i = 0; i < x.length; i++) {
-        if (!Number.isFinite(x[i]) || !Number.isFinite(y[i])) continue;
-        const t = mode === "neighborhood" ? (nnRank ? nnRank[i] : 0) : viz.colorScale ? rank[i] : 0.35;
+        if (!Number.isFinite(x[i]!) || !Number.isFinite(y[i]!)) continue;
+        const t = mode === "neighborhood" ? (nnRank ? nnRank[i]! : 0) : viz.colorScale ? rank[i]! : 0.35;
         if (!Number.isFinite(t)) continue;
-        buckets[Math.min(BK - 1, Math.floor(t * BK))].push(i);
+        buckets[Math.min(BK - 1, Math.floor(t * BK))]!.push(i);
       }
       const r = viz.pointSize;
       buckets.forEach((list, bi) => {
@@ -80,7 +80,7 @@ export function PointCanvas({ x, y, rank, nnDist, xHex, yHex, viz, title, classN
         ctx.fillStyle = rgb(colormap((bi + 0.5) / BK), viz.opacity);
         ctx.beginPath();
         for (const i of list) {
-          const X = sx(x[i]), Y = sy(y[i]);
+          const X = sx(x[i]!), Y = sy(y[i]!);
           if (X < -r || Y < -r || X > size.w + r || Y > size.h + r) continue;
           ctx.moveTo(X + r, Y); ctx.arc(X, Y, r, 0, Math.PI * 2);
         }
@@ -91,12 +91,12 @@ export function PointCanvas({ x, y, rank, nnDist, xHex, yHex, viz, title, classN
       const { cnt, sum } = bin(x, y, b, B, mode === "colordist" ? rank : undefined);
       let vals: Float64Array = cnt;
       if (mode === "kde") vals = gaussianBlur(cnt, B, Math.max(1.5, B / Math.sqrt(x.length) * 1.2));
-      if (mode === "colordist") vals = cnt.map((c, i) => (c ? sum[i] / c : NaN));
+      if (mode === "colordist") vals = cnt.map((c, i) => (c ? sum[i]! / c : NaN));
       let max = 0;
       for (const q of vals) if (Number.isFinite(q) && q > max) max = q;
       const cw = (b.maxX - b.minX) / B, ch = (b.maxY - b.minY) / B;
       for (let gy = 0; gy < B; gy++) for (let gx = 0; gx < B; gx++) {
-        const q = vals[gy * B + gx];
+        const q = vals[gy * B + gx]!;
         if (!Number.isFinite(q) || (mode !== "colordist" && q <= 0)) continue;
         const t = mode === "colordist" ? q : mode === "density" ? Math.log1p(q) / Math.log1p(max) : q / max;
         ctx.fillStyle = rgb(colormap(t), mode === "colordist" ? viz.opacity : Math.max(0.15, viz.opacity * (0.3 + 0.7 * t)));
@@ -143,11 +143,11 @@ export function PointCanvas({ x, y, rank, nnDist, xHex, yHex, viz, title, classN
     if (!viz.hover) return;
     let best = 100, bi = -1;
     for (let i = 0; i < x.length; i++) {
-      const X = sx(x[i]), Y = sy(y[i]);
+      const X = sx(x[i]!), Y = sy(y[i]!);
       const d = (X - px) ** 2 + (Y - py) ** 2;
       if (d < best) { best = d; bi = i; }
     }
-    setHover(bi >= 0 ? { i: bi, sx: sx(x[bi]), sy: sy(y[bi]) } : null);
+    setHover(bi >= 0 ? { i: bi, sx: sx(x[bi]!), sy: sy(y[bi]!) } : null);
   };
 
   const exportPng = () => {
@@ -183,9 +183,9 @@ export function PointCanvas({ x, y, rank, nnDist, xHex, yHex, viz, title, classN
             style={{ left: Math.min(hover.sx + 12, size.w - 290), top: Math.min(hover.sy + 12, size.h - 110) }}
           >
             <div className="text-primary">point #{hover.i}</div>
-            <div className="break-all">X: {xHex[hover.i].slice(0, 20)}…{xHex[hover.i].slice(-8)}</div>
-            <div className="break-all">Y: {yHex[hover.i].slice(0, 20)}…{yHex[hover.i].slice(-8)}</div>
-            <div>proj: ({x[hover.i].toFixed(5)}, {y[hover.i].toFixed(5)})</div>
+            <div className="break-all">X: {xHex[hover.i]!.slice(0, 20)}…{xHex[hover.i]!.slice(-8)}</div>
+            <div className="break-all">Y: {yHex[hover.i]!.slice(0, 20)}…{yHex[hover.i]!.slice(-8)}</div>
+            <div>proj: ({x[hover.i]!.toFixed(5)}, {y[hover.i]!.toFixed(5)})</div>
           </div>
         )}
       </div>
