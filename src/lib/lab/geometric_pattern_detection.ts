@@ -78,7 +78,7 @@ function fitLine(points: number[], x: Float64Array, y: Float64Array) {
   }
   return {
     count: points.length, fraction: 0,
-    angleDeg: ((Math.atan2(ny, -nx) * 180 / Math.PI) % 180 + 180) % 180,
+    angleDeg: ((Math.atan2(-nx, ny) * 180 / Math.PI) % 180 + 180) % 180,
     offset, rmsResidual: Math.sqrt(sumSq / points.length), maxResidual, nx, ny,
   };
 }
