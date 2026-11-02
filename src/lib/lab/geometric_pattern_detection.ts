@@ -287,7 +287,7 @@ export function detectGeometricPatterns(
   // Cubic y(x) least-squares R². This detects only single-valued y=f(x) shapes.
   const cubicCurveR2 = (() => {
     if(n<8||width<=0) return 0;
-    const sums=new Float64Array(7), rhs=new Float64Array(4);
+    const sums=new Float64Array(16), rhs=new Float64Array(4);
     let mean=0;for(const i of valid)mean+=inputY[i]!;mean/=n;
     let total=0;
     for(const i of valid){
