@@ -134,8 +134,10 @@ export function PointCanvas({ x, y, rank, nnDist, xHex, yHex, viz, title, classN
   const onMove = (e: React.PointerEvent) => {
     const rect = canvas.current!.getBoundingClientRect();
     const px = e.clientX - rect.left, py = e.clientY - rect.top;
-    if (drag.current) {
-      setView((v) => ({ ...v, ox: drag.current!.ox + e.clientX - drag.current!.x, oy: drag.current!.oy + e.clientY - drag.current!.y }));
+    const d = drag.current;
+    if (d) {
+      const ox = d.ox + e.clientX - d.x, oy = d.oy + e.clientY - d.y;
+      setView((v) => ({ ...v, ox, oy }));
       return;
     }
     if (!viz.hover) return;
@@ -171,6 +173,7 @@ export function PointCanvas({ x, y, rank, nnDist, xHex, yHex, viz, title, classN
           className="absolute inset-0 cursor-crosshair"
           onPointerDown={(e) => { drag.current = { x: e.clientX, y: e.clientY, ox: view.ox, oy: view.oy }; (e.target as Element).setPointerCapture(e.pointerId); }}
           onPointerUp={() => (drag.current = null)}
+          onPointerCancel={() => (drag.current = null)}
           onPointerMove={onMove}
           onPointerLeave={() => setHover(null)}
         />
