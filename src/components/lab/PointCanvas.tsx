@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { RotateCcw, Download } from "lucide-react";
 import { bin, bounds, colormap, gaussianBlur, rankArray, rgb, type VizMode } from "@/lib/lab/visualization_engine";
 
-export interface Viz { pointSize: number; opacity: number; colorScale: boolean; grid: boolean; mode: VizMode; hover: boolean }
+export interface Viz { pointSize: number; opacity: number; colorScale: boolean; grid: boolean; mode: VizMode; hover: boolean; showKeys?: boolean }
 
 interface Props {
   x: Float64Array; y: Float64Array; rank: Float32Array; nnDist?: Float64Array | undefined;
@@ -10,9 +10,10 @@ interface Props {
   /** maps a colour value t∈[0,1] to RGB */ palette?: (t: number) => [number, number, number];
   levels?: number;
   extraInfo?: (i: number) => ReactNode;
+  /** synthetic private scalar label for point i (opt-in display only) */ keyLabel?: ((i: number) => string) | undefined;
 }
 
-export function PointCanvas({ x, y, rank, nnDist, xHex, yHex, viz, title, className, palette, levels, extraInfo }: Props) {
+export function PointCanvas({ x, y, rank, nnDist, xHex, yHex, viz, title, className, palette, levels, extraInfo, keyLabel }: Props) {
   const pal = palette ?? colormap;
   const wrap = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -113,6 +114,23 @@ export function PointCanvas({ x, y, rank, nnDist, xHex, yHex, viz, title, classN
         }
       }
     }
+    if (viz.showKeys && keyLabel && (mode === "points" || mode === "neighborhood")) {
+      ctx.font = "10px JetBrains Mono, monospace"; ctx.textBaseline = "middle";
+      const fg = v("--plot-axis"), bg = v("--plot-bg");
+      let drawn = 0;
+      const full = view.z >= 6;
+      for (let i = 0; i < x.length && drawn < 400; i++) {
+        if (!Number.isFinite(x[i]!) || !Number.isFinite(y[i]!)) continue;
+        const X = sx(x[i]!), Y = sy(y[i]!);
+        if (X < 0 || Y < 0 || X > size.w || Y > size.h) continue;
+        const k = keyLabel(i), txt = full ? k : `${k.slice(0, 8)}…${k.slice(-4)}`;
+        const tx = X + viz.pointSize + 3;
+        ctx.fillStyle = bg; ctx.globalAlpha = 0.7; ctx.fillRect(tx - 1, Y - 6, ctx.measureText(txt).width + 2, 12);
+        ctx.globalAlpha = 1; ctx.fillStyle = fg; ctx.fillText(txt, tx, Y);
+        drawn++;
+      }
+      ctx.textBaseline = "alphabetic";
+    }
     if (hover && viz.hover) {
       ctx.strokeStyle = v("--plot-axis"); ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.arc(hover.sx, hover.sy, viz.pointSize + 4, 0, Math.PI * 2); ctx.stroke();
@@ -190,6 +208,7 @@ export function PointCanvas({ x, y, rank, nnDist, xHex, yHex, viz, title, classN
             <div className="break-all">X: {xHex[hover.i]!.slice(0, 20)}…{xHex[hover.i]!.slice(-8)}</div>
             <div className="break-all">Y: {yHex[hover.i]!.slice(0, 20)}…{yHex[hover.i]!.slice(-8)}</div>
             <div>proj: ({x[hover.i]!.toFixed(5)}, {y[hover.i]!.toFixed(5)})</div>
+            {keyLabel && <div className="break-all text-accent">priv: {keyLabel(hover.i)}</div>}
             {extraInfo?.(hover.i)}
           </div>
         )}

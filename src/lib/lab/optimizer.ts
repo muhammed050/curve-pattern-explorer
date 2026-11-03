@@ -13,6 +13,10 @@ export const FORMULA_LIBRARY: [string, string, string][] = [
   ["Hyperbolic", "u*v*b*10", "u^2 - v^2"],
   ["Spiral", "r*cos(theta + b*10*r)", "r*sin(theta + b*10*r)"],
   ["Tanh squash", "tanh(b*4*u + a*v)", "tanh(b*4*v - a*u)"],
+  ["Lissajous", "sin(3*pi*u*b) + a*v", "sin(2*pi*v*b) + a*u"],
+  ["Rose", "cos(4*theta*b)*r*cos(theta)", "cos(4*theta*b)*r*sin(theta)"],
+  ["Exponential", "exp(b*u)*cos(pi*v)", "exp(b*u)*sin(pi*v)"],
+  ["Ripple", "u*(1 + a*sin(20*b*r))", "v*(1 + a*sin(20*b*r))"],
 ];
 
 export interface Genome { steps: Step[]; formula: number }

@@ -1,6 +1,6 @@
 // Multi-palette colour engine with level quantisation and HSL adjustments.
 export type RGB = [number, number, number];
-export type PaletteId = "rainbow" | "neon" | "electric" | "fire" | "ocean" | "plasma" | "viridis" | "turbo" | "custom";
+export type PaletteId = "rainbow" | "neon" | "electric" | "fire" | "ocean" | "plasma" | "viridis" | "turbo" | "magma" | "inferno" | "cividis" | "sunset" | "aurora" | "cyberpunk" | "pastel" | "ice" | "forest" | "gold" | "hsv" | "grayscale" | "custom";
 export type Direction = "linear" | "diverging" | "cyclic";
 export type ColorSource = "rank" | "x" | "y" | "hash" | "density" | "neighbor";
 
@@ -24,6 +24,18 @@ export const PALETTES: Record<Exclude<PaletteId, "custom">, { label: string; sto
   plasma: { label: "Plasma", stops: [[13, 8, 135], [84, 2, 163], [139, 10, 165], [185, 50, 137], [219, 92, 104], [244, 136, 73], [254, 188, 43], [240, 249, 33]] },
   viridis: { label: "Viridis", stops: [[68, 1, 84], [72, 40, 120], [62, 74, 137], [49, 104, 142], [38, 130, 142], [31, 158, 137], [53, 183, 121], [109, 205, 89], [180, 222, 44], [253, 231, 37]] },
   turbo: { label: "Turbo", stops: [[48, 18, 59], [70, 107, 227], [40, 187, 236], [49, 242, 153], [164, 252, 59], [237, 208, 58], [251, 128, 34], [210, 48, 5], [122, 4, 3]] },
+  magma: { label: "Magma", stops: [[0, 0, 4], [40, 17, 89], [114, 31, 129], [183, 55, 121], [241, 96, 93], [254, 175, 119], [252, 253, 191]] },
+  inferno: { label: "Inferno", stops: [[0, 0, 4], [50, 10, 94], [120, 28, 109], [187, 55, 84], [237, 105, 37], [251, 180, 26], [252, 255, 164]] },
+  cividis: { label: "Cividis (colour-blind safe)", stops: [[0, 34, 78], [52, 68, 108], [102, 105, 112], [149, 143, 120], [203, 186, 105], [254, 232, 56]] },
+  sunset: { label: "Sunset", stops: [[45, 20, 80], [140, 30, 110], [230, 60, 90], [250, 130, 60], [255, 210, 110]] },
+  aurora: { label: "Aurora", stops: [[10, 20, 60], [20, 120, 140], [60, 230, 150], [160, 120, 240], [240, 90, 200]] },
+  cyberpunk: { label: "Cyberpunk", stops: [[255, 0, 110], [131, 56, 236], [58, 134, 255], [0, 245, 212], [255, 230, 0]] },
+  pastel: { label: "Pastel", stops: [[255, 179, 186], [255, 223, 186], [255, 255, 186], [186, 255, 201], [186, 225, 255], [215, 190, 255]] },
+  ice: { label: "Ice", stops: [[10, 10, 40], [30, 60, 130], [80, 140, 210], [170, 215, 245], [250, 255, 255]] },
+  forest: { label: "Forest", stops: [[20, 30, 15], [40, 80, 30], [90, 140, 50], [170, 190, 80], [235, 230, 150]] },
+  gold: { label: "Gold & Copper", stops: [[40, 20, 5], [120, 60, 20], [190, 110, 40], [230, 175, 70], [255, 235, 160]] },
+  hsv: { label: "Full Hue Wheel", stops: [[255, 0, 0], [255, 255, 0], [0, 255, 0], [0, 255, 255], [0, 0, 255], [255, 0, 255], [255, 0, 0]] },
+  grayscale: { label: "Grayscale", stops: [[15, 15, 15], [240, 240, 240]] },
 };
 export const PALETTE_IDS: PaletteId[] = [...(Object.keys(PALETTES) as PaletteId[]), "custom"];
 export const paletteLabel = (id: PaletteId) => (id === "custom" ? "Custom Gradient" : PALETTES[id].label);

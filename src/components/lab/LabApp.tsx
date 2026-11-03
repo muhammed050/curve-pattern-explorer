@@ -11,8 +11,13 @@ import { detectGeometricPatterns } from "@/lib/lab/geometric_pattern_detection";
 import { loadExperiments, saveExperiments, type Experiment } from "@/lib/lab/experiment_manager";
 import { MODES } from "@/lib/lab/visualization_engine";
 import { PointCanvas, type Viz } from "./PointCanvas";
+import { ColorPanel } from "./ColorPanel";
+import { OptimizerPanel } from "./OptimizerPanel";
+import { colorValues, DEFAULT_COLOR, makePalette, shapeT, type ColorCfg } from "@/lib/lab/color_engine";
+import { genomeLabel, genomeToFormula, type Genome } from "@/lib/lab/optimizer";
+import { Bot, KeyRound } from "lucide-react";
 
-type Section = "overview" | "explorer" | "lab" | "formula" | "stats" | "geometry" | "compare" | "saved" | "settings";
+type Section = "overview" | "explorer" | "lab" | "formula" | "stats" | "geometry" | "compare" | "saved" | "settings" | "optimizer";
 const NAV: { id: Section; label: string; icon: typeof Activity }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "explorer", label: "Point Explorer", icon: Sparkles },
@@ -20,6 +25,7 @@ const NAV: { id: Section; label: string; icon: typeof Activity }[] = [
   { id: "formula", label: "Formula Editor", icon: FunctionSquare },
   { id: "stats", label: "Statistical Analysis", icon: BarChart3 },
   { id: "geometry", label: "Geometric Patterns", icon: Waypoints },
+  { id: "optimizer", label: "AI Optimizer", icon: Bot },
   { id: "compare", label: "Experiment Comparison", icon: GitCompare },
   { id: "saved", label: "Saved Experiments", icon: Save },
   { id: "settings", label: "Settings", icon: Settings },
@@ -59,7 +65,9 @@ export function LabApp() {
   const [steps, setSteps] = useState<Step[]>(defaultSteps);
   const [fx, setFx] = useState("u + a*sin(2*pi*b*v)");
   const [fy, setFy] = useState("v + a*cos(2*pi*b*u)");
-  const [viz, setViz] = useState<Viz>({ pointSize: 2.2, opacity: 0.85, colorScale: true, grid: true, mode: "points", hover: true });
+  const [viz, setViz] = useState<Viz>({ pointSize: 2.2, opacity: 0.85, colorScale: true, grid: true, mode: "points", hover: true, showKeys: false });
+  const [colorCfg, setColorCfg] = useState<ColorCfg>(DEFAULT_COLOR);
+  const [inspectKeys, setInspectKeys] = useState(false);
   const [experiments, setExperiments] = useState<Experiment[]>([]);
   const [selfTest, setSelfTest] = useState<{ label: string; ok: boolean }[] | null>(null);
 
@@ -81,6 +89,23 @@ export function LabApp() {
   // Always analyze the ORIGINAL public X/Y projection, never transformed points or colour/rank labels.
   const geometry = useMemo(() => (sample ? detectGeometricPatterns(sample.u, sample.v) : null), [sample]);
   const algo = describePipeline(steps);
+  const palette = useMemo(() => makePalette(colorCfg), [colorCfg]);
+  const colors = useMemo(() => {
+    if (!sample) return new Float32Array(0);
+    const raw = colorValues(colorCfg.source, { u: sample.u, v: sample.v, rank: sample.rank, xHex: sample.xHex, yHex: sample.yHex }, statsP?.nnDist, statsP?.nnIdx);
+    return raw.map((t) => shapeT(t, colorCfg));
+  }, [sample, colorCfg, statsP]);
+  const keyLabel = useMemo(() => (sample && inspectKeys ? (i: number) => sample.scalars[i]!.toString(16).padStart(64, "0") : undefined), [sample, inspectKeys]);
+  const cp = { rank: colors, palette, levels: colorCfg.levels, keyLabel };
+  const applyGenome = (g: Genome) => { const [a, b] = genomeToFormula(g); setSteps(g.steps); setFx(a); setFy(b); setSection("lab"); };
+  const saveGenome = (name: string, g: Genome) => {
+    if (!sample || !statsO) return;
+    const [a, b] = genomeToFormula(g);
+    const p = project(sample.u, sample.v, g.steps, compileProjection(a, b).fn);
+    const e: Experiment = { id: crypto.randomUUID(), name: name || genomeLabel(g), createdAt: Date.now(), algorithm: genomeLabel(g), steps: g.steps, fx: a, fy: b,
+      sampleSize: sample.n, original: summarize(statsO), projected: summarize(computeStats(p.x, p.y, sample.rank)) };
+    const list = [e, ...experiments]; setExperiments(list); saveExperiments(list);
+  };
 
   const updateStep = (i: number, patch: Partial<Step>) => setSteps((s) => s.map((st, j) => (j === i ? { ...st, ...patch } : st)));
   const moveStep = (i: number, d: number) => setSteps((s) => {
@@ -111,8 +136,8 @@ export function LabApp() {
   const showSide = ["explorer", "lab", "formula"].includes(section);
   const mainPlot = sample && projected && (
     <PointCanvas
-      x={projected.x} y={projected.y} rank={sample.rank} nnDist={statsP?.nnDist}
-      xHex={sample.xHex} yHex={sample.yHex} viz={viz} className="h-full"
+      x={projected.x} y={projected.y} nnDist={statsP?.nnDist}
+      xHex={sample.xHex} yHex={sample.yHex} viz={viz} className="h-full" {...cp}
       title={`${algo} · n=${sample.n}`}
     />
   );
@@ -166,6 +191,8 @@ export function LabApp() {
               {panelOpen && (
                 <div className="glass w-full shrink-0 space-y-4 overflow-y-auto rounded-xl border border-border p-4 lg:h-[calc(100vh-6rem)] lg:w-80">
                   {section === "explorer" && <VizControls viz={viz} setViz={setViz} />}
+                  <KeyControls on={inspectKeys} setOn={(v) => { setInspectKeys(v); if (!v) setViz((z) => ({ ...z, showKeys: false })); }} labels={!!viz.showKeys} setLabels={(v) => setViz((z) => ({ ...z, showKeys: v }))} />
+                  <ColorPanel cfg={colorCfg} setCfg={setColorCfg} />
                   {section === "lab" && (
                     <>
                       <div className="flex items-center justify-between">
@@ -201,14 +228,17 @@ export function LabApp() {
           {section === "compare" && sample && projected && statsO && statsP && (
             <div className="w-full space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <PointCanvas x={sample.u} y={sample.v} rank={sample.rank} nnDist={statsO.nnDist} xHex={sample.xHex} yHex={sample.yHex} viz={viz} title="Original projection" className="h-[420px]" />
-                <PointCanvas x={projected.x} y={projected.y} rank={sample.rank} nnDist={statsP.nnDist} xHex={sample.xHex} yHex={sample.yHex} viz={viz} title={algo} className="h-[420px]" />
+                <PointCanvas x={sample.u} y={sample.v} nnDist={statsO.nnDist} xHex={sample.xHex} yHex={sample.yHex} viz={viz} title="Original projection" className="h-[420px]" {...cp} />
+                <PointCanvas x={projected.x} y={projected.y} nnDist={statsP.nnDist} xHex={sample.xHex} yHex={sample.yHex} viz={viz} title={algo} className="h-[420px]" {...cp} />
                 <PointCanvas x={sample.u} y={sample.v} rank={sample.rank} xHex={sample.xHex} yHex={sample.yHex} viz={{ ...viz, mode: "kde" }} title="Density · original" className="h-[260px]" />
                 <PointCanvas x={projected.x} y={projected.y} rank={sample.rank} xHex={sample.xHex} yHex={sample.yHex} viz={{ ...viz, mode: "kde" }} title="Density · transformed" className="h-[260px]" />
               </div>
               <SaveForm onSave={saveExperiment} />
               <StatsTable a={summarize(statsO)} b={summarize(statsP)} aLabel="Original" bLabel={algo} />
             </div>
+          )}
+          {section === "optimizer" && sample && (
+            <div className="w-full"><OptimizerPanel sample={sample} viz={viz} colors={colors} palette={palette} levels={colorCfg.levels} onApply={applyGenome} onSave={saveGenome} /></div>
           )}
           {section === "saved" && <SavedPanel list={experiments} onLoad={loadExperiment} onDelete={deleteExperiment} onSave={saveExperiment} />}
           {section === "settings" && <SettingsPanel viz={viz} setViz={setViz} size={size} setSize={setSize} selfTest={selfTest} rerun={() => setSelfTest(runSelfTest())} />}
@@ -232,6 +262,17 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
       <span className="text-muted-foreground">{label}</span>
       <input type="checkbox" className="lab-check" checked={checked} onChange={(e) => onChange(e.target.checked)} />
     </label>
+  );
+}
+
+function KeyControls({ on, setOn, labels, setLabels }: { on: boolean; setOn: (v: boolean) => void; labels: boolean; setLabels: (v: boolean) => void }) {
+  return (
+    <div className="space-y-2 rounded-lg border border-accent/40 p-3">
+      <div className="lab-label flex items-center gap-1"><KeyRound size={12} />Synthetic private keys</div>
+      <Toggle label="Show private key on hover" checked={on} onChange={setOn} />
+      <Toggle label="Label points with private key" checked={labels && on} onChange={(v) => { if (v) setOn(true); setLabels(v); }} />
+      <p className="text-[11px] leading-relaxed text-muted-foreground">These keys are random demo keys made in this browser. They are never saved or exported. Zoom in to see full keys on labels (up to 400 shown).</p>
+    </div>
   );
 }
 
