@@ -11,5 +11,5 @@
 
 ## Architecture
 - Lab logic lives in `src/lib/lab/*` (crypto, projections, formula parser, stats, experiments) as pure TS modules; UI in `src/components/lab`. Why: keeps math testable and separate from rendering.
-- Synthetic scalars live only in memory on `Sample.scalars`; shown only via the opt-in Synthetic Key Inspection hover (off by default), never exported, persisted, or sent to any API. Projections and public-only optimization never read them. Why: user-requested inspector with integrity safeguards.
+- Synthetic scalars live only in memory on `Sample.scalars`; shown only via the opt-in key hover and point labels (off by default), never exported, persisted, or sent to any API. Projections and public-only optimization never read them. Why: user-requested inspector with integrity safeguards.
 - Custom formulas go through the hand-written parser in `formula.ts`, never eval. Why: safe expression execution.
