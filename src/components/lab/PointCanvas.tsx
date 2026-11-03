@@ -10,7 +10,7 @@ interface Props {
   /** maps a colour value t∈[0,1] to RGB */ palette?: (t: number) => [number, number, number];
   levels?: number;
   extraInfo?: (i: number) => ReactNode;
-  /** synthetic private scalar label for point i (opt-in display only) */ keyLabel?: (i: number) => string;
+  /** synthetic private scalar label for point i (opt-in display only) */ keyLabel?: ((i: number) => string) | undefined;
 }
 
 export function PointCanvas({ x, y, rank, nnDist, xHex, yHex, viz, title, className, palette, levels, extraInfo, keyLabel }: Props) {

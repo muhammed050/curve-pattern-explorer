@@ -228,8 +228,8 @@ export function LabApp() {
           {section === "compare" && sample && projected && statsO && statsP && (
             <div className="w-full space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <PointCanvas x={sample.u} y={sample.v} rank={sample.rank} nnDist={statsO.nnDist} xHex={sample.xHex} yHex={sample.yHex} viz={viz} title="Original projection" className="h-[420px]" {...cp} />
-                <PointCanvas x={projected.x} y={projected.y} rank={sample.rank} nnDist={statsP.nnDist} xHex={sample.xHex} yHex={sample.yHex} viz={viz} title={algo} className="h-[420px]" {...cp} />
+                <PointCanvas x={sample.u} y={sample.v} nnDist={statsO.nnDist} xHex={sample.xHex} yHex={sample.yHex} viz={viz} title="Original projection" className="h-[420px]" {...cp} />
+                <PointCanvas x={projected.x} y={projected.y} nnDist={statsP.nnDist} xHex={sample.xHex} yHex={sample.yHex} viz={viz} title={algo} className="h-[420px]" {...cp} />
                 <PointCanvas x={sample.u} y={sample.v} rank={sample.rank} xHex={sample.xHex} yHex={sample.yHex} viz={{ ...viz, mode: "kde" }} title="Density · original" className="h-[260px]" />
                 <PointCanvas x={projected.x} y={projected.y} rank={sample.rank} xHex={sample.xHex} yHex={sample.yHex} viz={{ ...viz, mode: "kde" }} title="Density · transformed" className="h-[260px]" />
               </div>
