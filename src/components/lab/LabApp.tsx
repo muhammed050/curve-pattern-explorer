@@ -136,7 +136,7 @@ export function LabApp() {
   const showSide = ["explorer", "lab", "formula"].includes(section);
   const mainPlot = sample && projected && (
     <PointCanvas
-      x={projected.x} y={projected.y} rank={sample.rank} nnDist={statsP?.nnDist}
+      x={projected.x} y={projected.y} nnDist={statsP?.nnDist}
       xHex={sample.xHex} yHex={sample.yHex} viz={viz} className="h-full" {...cp}
       title={`${algo} · n=${sample.n}`}
     />
